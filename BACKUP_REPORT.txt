@@ -1,0 +1,50 @@
+ent2 Chrome Extension v2.5.1 - Source Backup
+Created 2026-10-14
+Original uploaded files preserved with manifest-compatible names.
+Total source/asset files: 21
+Manifest-referenced missing files: none
+JavaScript syntax check: 15/15 passed
+
+Important: Static checks are not a functional browser test.
+Uses playentry.org GraphQL and remote GitHub data.json; not fully offline.
+Original code exposes some tokens to DOM and has network dependencies; review before production use.
+
+Files (SHA-256):
+ca17a01ad6f2e96a477f19d2dedf84adaf9db09348ac985b2e5f220cf0181cc1  background.js
+1b0b952c04bc8d8bad703a896c122b21a9c313c594258231584c7deec82d3951  content.js
+4965b1c4a35f61e7ea00c22a0311ce5bfe3d3cedd903d428d1999f2a28ac8e30  ent2.svg
+e87e550794322e574a1fda0c1549a3c70dae5a93d9113417a429016838eab8cb  html2canvas.min.js
+ad8a7ca87893555631ab3dce45d298cdd9f8a1bd6906689e518b06fedc7adeab  inject.js
+b9f2ff5249baa6033e921b9e0a0cf9c3eb722ceb8a0fd6017ccbca91b1b559ca  logo.png
+c309a5a16016e26bae55c2189dfbc835f6e16ad628891dd64f13567722601e54  manifest.json
+4f90b217bbf3ee8693255b9f901d76def16e6da11e761279fce8b59136363fee  modules/core/config.js
+441081c17eb8619e39c338b97549cd029444488857fe0e6dec741127fdb2ad35  modules/core/domObserver.js
+0e5731d2c07a46b8bdc7699888a540523934703f70dd1487af06e0852aa623d1  modules/core/utils.js
+c0df8adf69ceff3f6a1e45c42cc1596049a63ae14dbcf7319eb4d351099b70ad  modules/ent2/commFilter.js
+44d5551988272aca6e2b4b66a5c46c8fd4278528c78dd1da884ba8476ba8bbf8  modules/ent2/ent2Router.js
+f2fdf5a69c27383cf9386f5034f32b671ae73ac9f7fe7cec8b4dcf499cbf9346  modules/ent2/profileView.js
+9506762602257c81e162e2aed0886b0dfdbab922e3759c5a3689addb3ac45789  modules/ent2/projectExplore.js
+2540624ebe70f7edd754a1cdf7a21f5ab6b959cc8895d1ab908a0b7612afaba4  modules/ent2/searchHistory.js
+11c723bfc46761169e2d7088aa7a12a088f509b77505ee9bc6943934c5686f25  modules/ent2/storage.js
+294f705efbc381c3f89275afa898e277c76b1c68f24c920e4311519f4b19210a  modules/ent2/userSearch.js
+d2f63412868985a23a1c1570e0e41325684a586ba07e504e6b36aaa62c4b6291  popup.html
+88884364daca9364f7d35aace6a4faf25f7221ec1a00844251a781dbff57ecaa  popup.js
+39876ff2c593e9a96a8cb0c12b22919483775ad9b2a12765aae6e66e49134a55  selectproject.svg
+6f7275ab92f472f1f21b05ddbe48929939688c2b3e1e7b3bfcb1ccde678758da  version.json
+
+Syntax results:
+PASS background.js 
+PASS content.js 
+PASS html2canvas.min.js 
+PASS inject.js 
+PASS modules/core/config.js 
+PASS modules/core/domObserver.js 
+PASS modules/core/utils.js 
+PASS modules/ent2/commFilter.js 
+PASS modules/ent2/ent2Router.js 
+PASS modules/ent2/profileView.js 
+PASS modules/ent2/projectExplore.js 
+PASS modules/ent2/searchHistory.js 
+PASS modules/ent2/storage.js 
+PASS modules/ent2/userSearch.js 
+PASS popup.js 
