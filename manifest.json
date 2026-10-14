@@ -49,7 +49,8 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["popup.html", "popup.js", "logo.png", "inject.js", "content.js", "ent2.svg", "selectproject.svg"],
+      "resources": ["popup.html", "popup.js", "logo.png", "inject.js", "content.js", "ent2.svg", "selectproject.svg",
+  "data.json"],
       "matches": ["https://playentry.org/*", "https://*.playentry.org/*"]
     }
   ]
