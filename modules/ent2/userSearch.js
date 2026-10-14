@@ -79,8 +79,8 @@ async function getOrFetchEnt2DataJson(onProgress, forceRefresh = false) {
 
         try {
             if (onProgress) onProgress('최신 data.json (7.5MB) 다운로드 중...');
-            const cacheBustUrl = `https://raw.githubusercontent.com/ddot103/Entryuser/refs/heads/main/data.json?t=${Date.now()}`;
-            const res = await fetch(cacheBustUrl, { cache: 'no-cache' });
+const localUrl = chrome.runtime.getURL('data.json');
+const res = await fetch(localUrl);
             if (!res.ok) throw new Error('data.json fetch HTTP error ' + res.status);
             
             const data = await res.json();
