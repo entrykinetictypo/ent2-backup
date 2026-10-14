@@ -156,7 +156,7 @@ function compareNicknamesKoEn(a, b) {
     return nickA.localeCompare(nickB, 'ko', { numeric: true, sensitivity: 'base' });
 }
 
-function searchInEnt2DataJson(queryVal, limit = 50) {
+function searchInEnt2DataJson(queryVal, limit = Infinity) {
     if (!queryVal) return [];
     const qTrim = queryVal.trim();
     if (!qTrim) return [];
@@ -392,7 +392,7 @@ function renderEnt2UserSearchTab(container, isDark, profileIdParam, navTo) {
         await getOrFetchEnt2DataJson();
 
         // Fast local search in data.json (max 50 preview items)
-        const localMatches = searchInEnt2DataJson(queryVal, 50);
+        const localMatches = searchInEnt2DataJson(queryVal);
 
         autoBox.style.maxHeight = '440px';
         autoBox.style.overflowY = 'auto';
