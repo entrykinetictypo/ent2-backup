@@ -166,6 +166,57 @@ function formatPostContentHtml(content) {
 }
 if (typeof window !== 'undefined') window.formatPostContentHtml = formatPostContentHtml;
 
+
+async function resolveLiteCommunityAuthorId(input) {
+    const value = String(input || '').trim();
+    if (!value) return '';
+    // Keep existing direct 24-character Entry user ID filters working.
+    if (/^[a-f0-9]{24}$/i.test(value)) return value;
+
+    if (liteCommunityState.userId && liteCommunityState.userSelectedInput === value) {
+        return liteCommunityState.userId;
+    }
+
+    // Reuse the existing user-search database rather than scanning only the current 12 posts.
+    if (typeof getOrFetchEnt2DataJson === 'function') {
+        await getOrFetchEnt2DataJson();
+        if (typeof ent2DataJsonCache !== 'undefined' && ent2DataJsonCache &&
+            Object.prototype.hasOwnProperty.call(ent2DataJsonCache, value) && ent2DataJsonCache[value]) {
+            return ent2DataJsonCache[value];
+        }
+        if (typeof ent2DataJsonLowerMap !== 'undefined' && ent2DataJsonLowerMap) {
+            const exact = ent2DataJsonLowerMap.get(value.toLowerCase());
+            if (exact && exact.id) return exact.id;
+        }
+    }
+
+    // A nickname absent from the bundled DB may still resolve through the live API.
+    try {
+        const headers = typeof getPlayEntryFetchHeaders === 'function'
+            ? getPlayEntryFetchHeaders()
+            : { 'Content-Type': 'application/json', 'x-client-type': 'Client' };
+        const response = await fetch('https://playentry.org/graphql/SELECT_USER_BY_NICKNAME', {
+            method: 'POST',
+            headers,
+            credentials: 'include',
+            body: JSON.stringify({
+                query: 'query SELECT_USER_BY_NICKNAME($nickname: String!) { user(nickname: $nickname) { id nickname } }',
+                variables: { nickname: value }
+            })
+        });
+        if (response.ok) {
+            const data = await response.json();
+            const user = data && data.data && data.data.user;
+            if (user && user.id && String(user.nickname || '').toLowerCase() === value.toLowerCase()) {
+                return user.id;
+            }
+        }
+    } catch (error) {
+        console.warn('[ent2] Community author nickname lookup failed:', error);
+    }
+    throw new Error('작성자를 찾지 못했습니다. 닉네임을 정확히 입력하거나 자동완성에서 사용자를 선택해 주세요.');
+}
+
 let currentCommContainer = null;
 
 async function renderLiteCommunityFilterUI(container) {
@@ -191,7 +242,7 @@ async function renderLiteCommunityFilterUI(container) {
                     <span style="display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; background:#3182f6; border-radius:8px;">${svgZap}</span>
                     <div>
                         <h3 style="margin:0; font-size:16px; font-weight:800; color:${isDark ? '#f8fafc' : '#0f172a'}; tracking-tight: -0.02em;">커뮤니티 검색 & 필터</h3>
-                        <p style="margin:2px 0 0 0; font-size:11px; color:${isDark ? '#94a3b8' : '#64748b'};">태그, 작성자 ID, 정렬, 작성기간 등 다양한 조건으로 게시글을 찾아보세요.</p>
+                        <p style="margin:2px 0 0 0; font-size:11px; color:${isDark ? '#94a3b8' : '#64748b'};">태그, 작성자 ID/닉네임, 정렬, 작성기간 등 다양한 조건으로 게시글을 찾아보세요.</p>
                     </div>
                 </div>
 
@@ -210,9 +261,11 @@ async function renderLiteCommunityFilterUI(container) {
                     <input type="text" id="lite-comm-input-q" value="${escapeHtml(liteCommunityState.q)}" placeholder="제목 또는 본문 검색..." style="width:100%; padding:10px 12px; border:1px solid ${isDark ? '#33353a' : '#cbd5e1'}; border-radius:10px; background:${isDark ? '#1a1b1e' : '#ffffff'}; color:${isDark ? '#f8fafc' : '#0f172a'}; font-size:12px; font-weight:600; outline:none; box-sizing:border-box;">
                 </div>
 
-                <div>
-                    <label style="display:block; font-size:11px; font-weight:700; color:${isDark ? '#94a3b8' : '#64748b'}; margin-bottom:4px;">작성자 ID</label>
-                    <input type="text" id="lite-comm-input-user" value="${escapeHtml(liteCommunityState.user)}" placeholder="작성자 고유 ID (예: 60a...)" style="width:100%; padding:10px 12px; border:1px solid ${isDark ? '#33353a' : '#cbd5e1'}; border-radius:10px; background:${isDark ? '#1a1b1e' : '#ffffff'}; color:${isDark ? '#f8fafc' : '#0f172a'}; font-size:12px; font-weight:600; outline:none; box-sizing:border-box;">
+                <div style="position:relative;">
+                    <label style="display:block; font-size:11px; font-weight:700; color:${isDark ? '#94a3b8' : '#64748b'}; margin-bottom:4px;">작성자 ID 또는 닉네임</label>
+                    <input type="text" id="lite-comm-input-user" value="${escapeHtml(liteCommunityState.user)}" placeholder="유저 ID 또는 닉네임 입력" autocomplete="off" style="width:100%; padding:10px 12px; border:1px solid ${isDark ? '#33353a' : '#cbd5e1'}; border-radius:10px; background:${isDark ? '#1a1b1e' : '#ffffff'}; color:${isDark ? '#f8fafc' : '#0f172a'}; font-size:12px; font-weight:600; outline:none; box-sizing:border-box;">
+                    <div id="lite-comm-user-suggestions" style="display:none; position:absolute; top:100%; left:0; right:0; z-index:40; max-height:240px; overflow-y:auto; background:${isDark ? '#1a1b1e' : '#ffffff'}; border:1px solid ${isDark ? '#33353a' : '#cbd5e1'}; box-shadow:0 8px 24px rgba(0,0,0,0.18); border-radius:10px;"></div>
+                    <div style="font-size:10px; color:${isDark ? '#94a3b8' : '#64748b'}; padding-top:4px;">닉네임 일부를 입력하면 작성자를 선택할 수 있어요.</div>
                 </div>
 
                 <div>
@@ -336,7 +389,12 @@ async function renderLiteCommunityFilterUI(container) {
 
     const runCommSearch = () => {
         liteCommunityState.q = container.querySelector('#lite-comm-input-q')?.value || '';
-        liteCommunityState.user = container.querySelector('#lite-comm-input-user')?.value || '';
+        const newAuthorInput = (container.querySelector('#lite-comm-input-user')?.value || '').trim();
+        if (newAuthorInput !== liteCommunityState.user) {
+            liteCommunityState.userId = null;
+            liteCommunityState.userSelectedInput = '';
+        }
+        liteCommunityState.user = newAuthorInput;
         liteCommunityState.tag = container.querySelector('#lite-comm-input-tag')?.value || '';
         liteCommunityState.sort = container.querySelector('#lite-comm-select-sort')?.value || 'created';
         liteCommunityState.term = container.querySelector('#lite-comm-select-term')?.value || 'all';
@@ -353,6 +411,61 @@ async function renderLiteCommunityFilterUI(container) {
     const inputQ = container.querySelector('#lite-comm-input-q');
     const inputUser = container.querySelector('#lite-comm-input-user');
     const inputTag = container.querySelector('#lite-comm-input-tag');
+
+    // Autocomplete shares the same local nickname index as the ent2 user search tab.
+    const authorSuggestions = container.querySelector('#lite-comm-user-suggestions');
+    if (inputUser && authorSuggestions) {
+        let lookupSequence = 0;
+        const hideSuggestions = () => { authorSuggestions.style.display = 'none'; };
+        const updateSuggestions = async () => {
+            const q = inputUser.value.trim();
+            const requestId = ++lookupSequence;
+            if (!q || /^[a-f0-9]{24}$/i.test(q)) { hideSuggestions(); return; }
+            try {
+                if (typeof getOrFetchEnt2DataJson !== 'function' ||
+                    typeof searchInEnt2DataJson !== 'function') return;
+                await getOrFetchEnt2DataJson();
+                if (requestId !== lookupSequence || !inputUser.isConnected) return;
+                const found = searchInEnt2DataJson(q, 20).filter(item => item.id && !item.isDirectId);
+                authorSuggestions.replaceChildren();
+                for (const item of found) {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.textContent = item.nickname + '  ·  ' + item.id;
+                    button.style.cssText = 'display:block;width:100%;text-align:left;padding:10px 12px;background:transparent;border:0;border-bottom:1px solid rgba(130,130,130,0.15);color:inherit;font-size:12px;cursor:pointer;word-break:break-all;';
+                    button.addEventListener('mousedown', event => event.preventDefault());
+                    button.onclick = () => {
+                        inputUser.value = item.nickname;
+                        liteCommunityState.user = item.nickname;
+                        liteCommunityState.userId = item.id;
+                        liteCommunityState.userSelectedInput = item.nickname;
+                        hideSuggestions();
+                        runCommSearch();
+                    };
+                    authorSuggestions.appendChild(button);
+                }
+                authorSuggestions.style.display = found.length ? 'block' : 'none';
+            } catch (error) {
+                console.warn('[ent2] Community author autocomplete failed:', error);
+                hideSuggestions();
+            }
+        };
+        inputUser.addEventListener('input', () => {
+            liteCommunityState.userId = null;
+            liteCommunityState.userSelectedInput = '';
+            updateSuggestions();
+        });
+        inputUser.addEventListener('focus', updateSuggestions);
+        inputUser.addEventListener('blur', () => setTimeout(hideSuggestions, 160));
+        inputUser.addEventListener('keydown', event => {
+            if (event.key === 'Escape') hideSuggestions();
+            if (event.key === 'ArrowDown' && authorSuggestions.style.display !== 'none') {
+                event.preventDefault();
+                authorSuggestions.querySelector('button')?.focus();
+            }
+        });
+    }
+
     const selectSort = container.querySelector('#lite-comm-select-sort');
     const selectTerm = container.querySelector('#lite-comm-select-term');
 
@@ -546,7 +659,20 @@ async function executeLiteCommunityQuery(container) {
     }
 
     if (liteCommunityState.q) vars.query = liteCommunityState.q;
-    if (liteCommunityState.user) vars.user = liteCommunityState.user;
+    if (liteCommunityState.user) {
+        try {
+            vars.user = await resolveLiteCommunityAuthorId(liteCommunityState.user);
+            liteCommunityState.userId = vars.user;
+            liteCommunityState.userSelectedInput = liteCommunityState.user;
+        } catch (error) {
+            cardsGrid.textContent = error.message;
+            cardsGrid.style.color = '#ef4444';
+            if (countEl) countEl.textContent = '작성자 검색 실패';
+            if (paginationEl) paginationEl.replaceChildren();
+            return;
+        }
+    }
+    cardsGrid.style.color = '';
     if (liteCommunityState.tag) vars.tag = liteCommunityState.tag;
 
     if (liteCommunityState.category && liteCommunityState.category !== 'all') {
