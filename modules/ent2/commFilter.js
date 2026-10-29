@@ -217,6 +217,20 @@ async function resolveLiteCommunityAuthorId(input) {
     throw new Error('작성자를 찾지 못했습니다. 닉네임을 정확히 입력하거나 자동완성에서 사용자를 선택해 주세요.');
 }
 
+// Open the original Entry post without replacing the ent2 search/filter page.
+function getEnt2CommunityPostUrl(post, fallbackCategory = '') {
+    const id = String(post?.id || '');
+    if (!/^[a-f0-9]{24}$/i.test(id)) return null;
+
+    const category = String(post.category || fallbackCategory || '').toLowerCase();
+    let section = null;
+    if (category === 'tips') section = 'tips';
+    else if (category === 'qna') section = 'qna';
+    else if (category === 'free' || category === 'entrystory') section = 'entrystory';
+
+    return section ? `https://playentry.org/community/${section}/${id}` : null;
+}
+
 let currentCommContainer = null;
 
 async function renderLiteCommunityFilterUI(container) {
@@ -856,6 +870,7 @@ async function executeLiteCommunityQuery(container) {
             };
             const postCat = post.category || (isStory ? 'entrystory' : 'community');
             const catName = catMap[postCat] || postCat;
+            const originalPostUrl = getEnt2CommunityPostUrl(post, isStory ? 'entrystory' : '');
 
             const postUrl = (postCat === 'entrystory' || postCat === 'free') 
                 ? `https://playentry.org/community/entrystory/${post.id}`
@@ -901,6 +916,12 @@ async function executeLiteCommunityQuery(container) {
                             <a href="${postUrl}" class="ent2-comm-card-title" data-post-idx="${idx}" style="font-size:14px; font-weight:800; color:${isDark ? '#f8fafc' : '#0f172a'}; text-decoration:none; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; line-height:1.4; margin-bottom:8px; cursor:pointer;">
                                 ${escapeHtml(displayText)}
                             </a>
+                            ${originalPostUrl ? `
+                                <a href="${escapeHtml(originalPostUrl)}" target="_blank" rel="noopener noreferrer"
+                                   class="ent2-comm-original-link"
+                                   style="display:inline-flex; align-items:center; gap:4px; padding:6px 10px; margin-top:6px; border-radius:8px; background:${isDark ? 'rgba(49,130,246,0.18)' : '#e8f3ff'}; color:#3182f6; font-size:11px; font-weight:800; text-decoration:none;"
+                                   title="엔트리 원본 게시글을 새 탭에서 열기">해당 게시글로 이동 ↗</a>
+                            ` : ''}
                         </div>
 
                         <div style="display:flex; align-items:center; justify-content:space-between; border-top:1px solid ${isDark ? '#33353a' : '#f1f5f9'}; padding-top:12px; margin-top:4px;">
@@ -1865,6 +1886,7 @@ async function openEnt2AnalysisSidePanel(postOrId, isDark, postCardEl) {
     const catMap = { qna: '묻고 답하기', tips: '노하우&팁', free: '엔트리 이야기', entrystory: '엔트리 스토리' };
     const catName = catMap[post.category] || post.category || '커뮤니티';
     const dateStr = formatPostDetailDate(post.created);
+    const originalPostUrl = getEnt2CommunityPostUrl(post, initialPost?.category || '');
 
     let authorImg = 'https://playentry.org/img/DefaultCardUserThmb.svg';
     if (author.profileImage?.filename) {
@@ -1893,9 +1915,17 @@ async function openEnt2AnalysisSidePanel(postOrId, isDark, postCardEl) {
         <!-- Centered Container with generous side margins -->
         <div style="width: 100%; max-width: 860px; margin: 0 auto; padding: 28px 36px 60px 36px; box-sizing: border-box; display: flex; flex-direction: column; background: ${isDark ? '#101013' : '#ffffff'};">
             
-            <!-- Category Title (Large display text matching SVG: 노하우&팁) -->
-            <div style="font-size: 26px; font-weight: 800; color: ${isDark ? '#f8fafc' : '#000000'}; letter-spacing: -0.02em; margin-bottom: 8px;">
-                ${escapeHtml(catName)}
+            <!-- Community category and original-post navigation -->
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
+                <div style="font-size: 26px; font-weight: 800; color: ${isDark ? '#f8fafc' : '#000000'}; letter-spacing: -0.02em;">
+                    ${escapeHtml(catName)}
+                </div>
+                ${originalPostUrl ? `
+                    <a href="${escapeHtml(originalPostUrl)}" target="_blank" rel="noopener noreferrer"
+                       class="ent2-comm-original-link"
+                       style="display:inline-flex; align-items:center; padding:9px 12px; border-radius:10px; background:#3182f6; color:#ffffff; font-size:12px; font-weight:800; text-decoration:none;"
+                       title="엔트리 원본 게시글을 새 탭에서 열기">해당 게시글로 이동 ↗</a>
+                ` : ''}
             </div>
 
             <!-- Post Title (Matching SVG: 엔트리 작품을 전체화면으로 실행하는 법) -->
